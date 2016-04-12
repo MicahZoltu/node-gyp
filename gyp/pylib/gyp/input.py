@@ -946,7 +946,7 @@ def ExpandVariables(input, phase, variables, build_file):
 
     if type(replacement) is list:
       for item in replacement:
-        if not contents[-1] == '/' and type(item) not in (str, int):
+        if not contents[-1] == '/' and type(item) not in (str, int, long):
           raise GypError('Variable ' + contents +
                          ' must expand to a string or list of strings; ' +
                          'list contains a ' +
@@ -956,7 +956,7 @@ def ExpandVariables(input, phase, variables, build_file):
       # with conditions sections.
       ProcessVariablesAndConditionsInList(replacement, phase, variables,
                                           build_file)
-    elif type(replacement) not in (str, int):
+    elif type(replacement) not in (str, int, long):
           raise GypError('Variable ' + contents +
                          ' must expand to a string or list of strings; ' +
                          'found a ' + replacement.__class__.__name__)
@@ -1075,7 +1075,7 @@ def EvalSingleCondition(
   # use a command expansion directly inside a condition.
   cond_expr_expanded = ExpandVariables(cond_expr, phase, variables,
                                        build_file)
-  if type(cond_expr_expanded) not in (str, int):
+  if type(cond_expr_expanded) not in (str, int, long):
     raise ValueError(
           'Variable expansion in this context permits str and int ' + \
             'only, found ' + cond_expr_expanded.__class__.__name__)
@@ -1151,7 +1151,7 @@ def LoadAutomaticVariablesFromDict(variables, the_dict):
   # Any keys with plain string values in the_dict become automatic variables.
   # The variable name is the key name with a "_" character prepended.
   for key, value in the_dict.iteritems():
-    if type(value) in (str, int, list):
+    if type(value) in (str, int, long, list):
       variables['_' + key] = value
 
 
@@ -1164,7 +1164,7 @@ def LoadVariablesFromVariablesDict(variables, the_dict, the_dict_key):
   # (it could be a list or it could be parentless because it is a root dict),
   # the_dict_key will be None.
   for key, value in the_dict.get('variables', {}).iteritems():
-    if type(value) not in (str, int, list):
+    if type(value) not in (str, int, long, list):
       continue
 
     if key.endswith('%'):
@@ -1219,7 +1219,7 @@ def ProcessVariablesAndConditionsInDict(the_dict, phase, variables_in,
     # Skip "variables", which was already processed if present.
     if key != 'variables' and type(value) is str:
       expanded = ExpandVariables(value, phase, variables, build_file)
-      if type(expanded) not in (str, int):
+      if type(expanded) not in (str, int, long):
         raise ValueError(
               'Variable expansion in this context permits str and int ' + \
               'only, found ' + expanded.__class__.__name__ + ' for ' + key)
@@ -1290,7 +1290,7 @@ def ProcessVariablesAndConditionsInDict(the_dict, phase, variables_in,
       # copy is necessary here.
       ProcessVariablesAndConditionsInList(value, phase, variables,
                                           build_file)
-    elif type(value) is not int:
+    elif type(value) not in (int, long):
       raise TypeError('Unknown type ' + value.__class__.__name__ + \
                       ' for ' + key)
 
@@ -1309,7 +1309,7 @@ def ProcessVariablesAndConditionsInList(the_list, phase, variables,
       ProcessVariablesAndConditionsInList(item, phase, variables, build_file)
     elif type(item) is str:
       expanded = ExpandVariables(item, phase, variables, build_file)
-      if type(expanded) in (str, int):
+      if type(expanded) in (str, int, long):
         the_list[index] = expanded
       elif type(expanded) is list:
         the_list[index:index+1] = expanded
@@ -1323,7 +1323,7 @@ def ProcessVariablesAndConditionsInList(the_list, phase, variables,
               'Variable expansion in this context permits strings and ' + \
               'lists only, found ' + expanded.__class__.__name__ + ' at ' + \
               index)
-    elif type(item) is not int:
+    elif type(item) not in (int, long):
       raise TypeError('Unknown type ' + item.__class__.__name__ + \
                       ' at index ' + index)
     index = index + 1
@@ -2052,7 +2052,7 @@ def MergeLists(to, fro, to_file, fro_file, is_paths=False, append=True):
   hashable_to_set = set(x for x in to if is_hashable(x))
   for item in fro:
     singleton = False
-    if type(item) in (str, int):
+    if type(item) in (str, int, long):
       # The cheap and easy case.
       if is_paths:
         to_item = MakePathRelative(to_file, fro_file, item)
@@ -2116,8 +2116,8 @@ def MergeDicts(to, fro, to_file, fro_file):
     # modified.
     if k in to:
       bad_merge = False
-      if type(v) in (str, int):
-        if type(to[k]) not in (str, int):
+      if type(v) in (str, int, long):
+        if type(to[k]) not in (str, int, long):
           bad_merge = True
       elif type(v) is not type(to[k]):
         bad_merge = True
@@ -2127,7 +2127,7 @@ def MergeDicts(to, fro, to_file, fro_file):
             'Attempt to merge dict value of type ' + v.__class__.__name__ + \
             ' into incompatible type ' + to[k].__class__.__name__ + \
             ' for key ' + k)
-    if type(v) in (str, int):
+    if type(v) in (str, int, long):
       # Overwrite the existing value, if any.  Cheap and easy.
       is_path = IsPathSection(k)
       if is_path:
@@ -2639,7 +2639,7 @@ def TurnIntIntoStrInDict(the_dict):
   # Use items instead of iteritems because there's no need to try to look at
   # reinserted keys and their associated values.
   for k, v in the_dict.items():
-    if type(v) is int:
+    if type(v) in (int, long):
       v = str(v)
       the_dict[k] = v
     elif type(v) is dict:
@@ -2647,7 +2647,7 @@ def TurnIntIntoStrInDict(the_dict):
     elif type(v) is list:
       TurnIntIntoStrInList(v)
 
-    if type(k) is int:
+    if type(k) in (int, long):
       del the_dict[k]
       the_dict[str(k)] = v
 
@@ -2657,7 +2657,7 @@ def TurnIntIntoStrInList(the_list):
   """
   for index in xrange(0, len(the_list)):
     item = the_list[index]
-    if type(item) is int:
+    if type(item) in (int, long):
       the_list[index] = str(item)
     elif type(item) is dict:
       TurnIntIntoStrInDict(item)
